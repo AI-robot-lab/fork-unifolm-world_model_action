@@ -8,15 +8,15 @@
 
 
 
-This document provides instructions for setting up the deployment environment for Unitree G1 (with gripper) and Z1 platforms, including dependency installation, image service startup, and gripper control.
+Ten dokument opisuje konfigurację środowiska wdrożeniowego dla platform Unitree G1 (z chwytakiem) oraz Z1, w tym instalację zależności, uruchomienie usług obrazu i sterowanie chwytakiem. Materiał jest szczególnie przydatny w laboratoriach z robotem Unitree G1 EDU-U6.
 
-# 0. 📖 Introduction
+# 0. 📖 Wprowadzenie
 
-This repository is used for model deployment with Unitree robots.
+Repozytorium służy do wdrażania modeli na robotach Unitree. W praktyce obejmuje uruchomienie usług na robocie, przygotowanie sterowników i testów, aby model mógł wykonywać realne zadania.
 
 ---
 
-# 1. 🛠️ Environment Setup 
+# 1. 🛠️ Konfiguracja środowiska 
 
 ```bash
 conda create -n unitree_deploy python=3.10 && conda activate unitree_deploy
@@ -24,7 +24,7 @@ conda create -n unitree_deploy python=3.10 && conda activate unitree_deploy
 conda install pinocchio -c conda-forge
 pip install -e .
 
-# Optional: Install lerobot dependencies
+# Opcjonalnie: zainstaluj zależności lerobot
 pip install -e ".[lerobot]"
 
 git clone https://github.com/unitreerobotics/unitree_sdk2_python.git
@@ -34,19 +34,19 @@ cd unitree_sdk2_python  && pip install -e . && cd ..
 ---
 # 2. 🚀 Start 
 
-**Tip: Keep all devices on the same LAN**
+**Wskazówka: utrzymuj wszystkie urządzenia w tej samej sieci LAN, aby zmniejszyć opóźnienia.**
 
-## 2.1 🤖 Run G1 with Dex_1 Gripper 
+## 2.1 🤖 Uruchom G1 z chwytakiem Dex_1 
 
-### 2.1.1 📷 Image Capture Service Setup (G1 Board) 
+### 2.1.1 📷 Konfiguracja usługi przechwytywania obrazu (płyta G1) 
 
-[To open the image_server, follow these steps](https://github.com/unitreerobotics/xr_teleoperate?tab=readme-ov-file#31-%EF%B8%8F-image-service)
-1. Connect to the G1 board:
+[Aby uruchomić image_server, wykonaj te kroki](https://github.com/unitreerobotics/xr_teleoperate?tab=readme-ov-file#31-%EF%B8%8F-image-service)
+1. Połącz się z płytą G1 (cel: zdalne uruchomienie usługi obrazu):
     ```bash
     ssh unitree@192.168.123.164  # Password: 123
     ```
 
-2. Activate the environment and start the image server:
+2. Aktywuj środowisko i uruchom image server (cel: strumieniowanie obrazu do klienta):
     ```bash
     conda activate tv
     cd ~/image_server
@@ -55,146 +55,146 @@ cd unitree_sdk2_python  && pip install -e . && cd ..
 
 ---
 
-### 2.1.2 🤏 Dex_1 Gripper Service Setup (Development PC2)
+### 2.1.2 🤏 Konfiguracja usługi chwytaka Dex_1 (Development PC2)
 
-Refer to the [Dex_1 Gripper Installation Guide](https://github.com/unitreerobotics/dex1_1_service?tab=readme-ov-file#1--installation) for detailed setup instructions.
+Szczegóły instalacji znajdziesz w [Dex_1 Gripper Installation Guide](https://github.com/unitreerobotics/dex1_1_service?tab=readme-ov-file#1--installation).
 
-1. Navigate to the service directory:
+1. Przejdź do katalogu usługi (cel: uruchomienie serwera chwytaka):
     ```bash
     cd ~/dex1_1_service/build
     ```
 
-2. Start the gripper service, **ifconfig examines its own dds networkInterface**:
+2. Uruchom usługę chwytaka, **ifconfig sprawdza własny interfejs dds**:
     ```bash
     sudo ./dex1_1_gripper_server --network eth0 -l -r
     ```
 
-3. Verify communication with the gripper service:
+3. Zweryfikuj komunikację z usługą chwytaka:
     ```bash
     ./test_dex1_1_gripper_server --network eth0 -l -r
     ```
 
 ---
 
-### 2.1.2 ✅Testing 
+### 2.1.2 ✅Testy 
 
-Perform the following tests to ensure proper functionality:
+Wykonaj testy, aby upewnić się, że wszystkie elementy działają poprawnie:
 
-- **Dex1 Gripper Test**:
+- **Test chwytaka Dex1**:
   ```bash
   python test/endeffector/test_dex1.py
   ```
 
-- **G1 Arm Test**:
+- **Test ramienia G1**:
   ```bash
   python test/arm/g1/test_g1_arm.py
   ```
 
-- **Image Client Camera Test**:
+- **Test kamery (Image Client)**:
   ```bash
   python test/camera/test_image_client_camera.py
   ```
 
-- **G1 Datasets Replay**:
+- **Odtwarzanie datasetów G1**:
   ```bash
-  # --repo-id     Your unique repo ID on Hugging Face Hub 
-  # --robot_type     The type of the robot e.g., z1_dual_dex1_realsense, z1_realsense, g1_dex1, 
+  # --repo-id     Twój unikalny identyfikator repo na Hugging Face Hub 
+  # --robot_type     Typ robota, np. z1_dual_dex1_realsense, z1_realsense, g1_dex1, 
   
   python test/test_replay.py --repo-id unitreerobotics/G1_CameraPackaging_NewDataset --robot_type g1_dex1
   ```
 ---
 
-## 2.2 🦿 Run Z1 
+## 2.2 🦿 Uruchom Z1 
 
-### 2.2.1 🦿 Z1 Setup
-Clone and build the required repositories:
+### 2.2.1 🦿 Konfiguracja Z1
+Pobierz i zbuduj wymagane repozytoria:
 
-1. Download [z1_controller](https://github.com/unitreerobotics/z1_controller.git) and [z1_sdk](https://github.com/unitreerobotics/z1_sdk.git).
+1. Pobierz [z1_controller](https://github.com/unitreerobotics/z1_controller.git) oraz [z1_sdk](https://github.com/unitreerobotics/z1_sdk.git).
 
-2. Build the repositories:
+2. Zbuduj repozytoria:
     ```bash
     mkdir build && cd build
     cmake .. && make -j
     ```
 
-3. Copy the `unitree_arm_interface` library: [Modify according to your own path]
+3. Skopiuj bibliotekę `unitree_arm_interface`: [Zmodyfikuj ścieżkę]
     ```bash
     cp z1_sdk/lib/unitree_arm_interface.cpython-310-x86_64-linux-gnu.so ./unitree_deploy/robot_devices/arm
     ```
 
-4. Start the Z1 controller [Modify according to your own path]:
+4. Uruchom kontroler Z1 [Zmodyfikuj ścieżkę]:
     ```bash
     cd z1_controller/build && ./z1_ctrl
     ```
 
 ---
 
-### 2.2.2 Testing ✅
+### 2.2.2 Testy ✅
 
-Run the following tests:
+Uruchom następujące testy:
 
-- **Realsense Camera Test**:
+- **Test kamery Realsense**:
   ```bash
   python test/camera/test_realsense_camera.py # Modify the corresponding serial number according to your realsense
   ```
 
-- **Z1 Arm Test**:
+- **Test ramienia Z1**:
   ```bash
   python test/arm/z1/test_z1_arm.py
   ```
 
-- **Z1 Environment Test**:
+- **Test środowiska Z1**:
   ```bash
   python test/arm/z1/test_z1_env.py
   ```
 
-- **Z1 Datasets Replay**:
+- **Odtwarzanie datasetów Z1**:
   ```bash
-  # --repo-id     Your unique repo ID on Hugging Face Hub 
-  # --robot_type     The type of the robot e.g., z1_dual_dex1_realsense, z1_realsense, g1_dex1, 
+  # --repo-id     Twój unikalny identyfikator repo na Hugging Face Hub 
+  # --robot_type     Typ robota, np. z1_dual_dex1_realsense, z1_realsense, g1_dex1, 
 
   python test/test_replay.py --repo-id unitreerobotics/Z1_StackBox_Dataset --robot_type z1_realsense
   ```
 ---
 
-## 2.3 🦿 Run Z1_Dual
+## 2.3 🦿 Uruchom Z1_Dual
 
-### 2.3.1 🦿 Z1 Setup and Dex1 Setup
-Clone and build the required repositories:
+### 2.3.1 🦿 Konfiguracja Z1 oraz Dex1
+Pobierz i zbuduj wymagane repozytoria:
 
-1. Download and compile the corresponding code according to the above z1 steps and Download the gripper program to start locally
+1. Pobierz i skompiluj kod zgodnie z krokami dla Z1 oraz pobierz program chwytaka do uruchomienia lokalnego
 
-2. [Modify the multi-machine control according to the document](https://support.unitree.com/home/zh/Z1_developer/sdk_operation)
+2. [Dostosuj sterowanie wielomaszynowe zgodnie z dokumentacją](https://support.unitree.com/home/zh/Z1_developer/sdk_operation)
 
-3. [Download the modified z1_sdk_1 and then compile it](https://github.com/unitreerobotics/z1_sdk/tree/z1_dual), Copy the `unitree_arm_interface` library: [Modify according to your own path]
+3. [Pobierz zmodyfikowane z1_sdk_1 i je skompiluj](https://github.com/unitreerobotics/z1_sdk/tree/z1_dual), skopiuj bibliotekę `unitree_arm_interface`: [Zmodyfikuj ścieżkę]
     ```bash
     cp z1_sdk/lib/unitree_arm_interface.cpython-310-x86_64-linux-gnu.so ./unitree_deploy/robot_devices/arm
     ```
 
-4. Start the Z1 controller [Modify according to your own path]:
+4. Uruchom kontroler Z1 [Zmodyfikuj ścieżkę]:
     ```bash
     cd z1_controller/builb && ./z1_ctrl
     cd z1_controller_1/builb && ./z1_ctrl
     ```
-5. Start the gripper service, **ifconfig examines its own dds networkInterface**:
+5. Uruchom usługę chwytaka, **ifconfig sprawdza własny interfejs dds**:
     ```
     sudo ./dex1_1_gripper_server --network eth0 -l -r
     ```
 ---
 
-### 2.3.2 Testing ✅
+### 2.3.2 Testy ✅
 
-Run the following tests:
+Uruchom następujące testy:
 
-- **Z1_Dual Arm Test**:
+- **Test ramienia Z1_Dual**:
   ```bash
   python test/arm/z1/test_z1_arm_dual.py
   ```
 
-- **Z1_Dual Datasets Replay**:
+- **Odtwarzanie datasetów Z1_Dual**:
   ```bash
-  # --repo-id     Your unique repo ID on Hugging Face Hub 
-  # --robot_type     The type of the robot e.g., z1_dual_dex1_realsense, z1_realsense, g1_dex1, 
+  # --repo-id     Twój unikalny identyfikator repo na Hugging Face Hub 
+  # --robot_type     Typ robota, np. z1_dual_dex1_realsense, z1_realsense, g1_dex1, 
 
   python test/test_replay.py --repo-id unitreerobotics/Z1_Dual_Dex1_StackBox_Dataset_V2 --robot_type z1_dual_dex1_realsense
   ```
