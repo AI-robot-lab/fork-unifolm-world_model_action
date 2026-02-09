@@ -18,7 +18,7 @@ from unitree_deploy.utils.eval_utils import (
 )
 
 # -----------------------------------------------------------------------------
-# Network & environment defaults
+# Domyślne ustawienia sieci i środowiska
 # -----------------------------------------------------------------------------
 os.environ["http_proxy"] = ""
 os.environ["https_proxy"] = ""
@@ -47,7 +47,7 @@ CAM_KEY = {
 
 def prepare_observation(args: argparse.Namespace, obs: Any) -> OrderedDict:
     """
-    Convert a raw env observation into the model's expected input dict.
+    Konwertuje surową obserwację środowiska na słownik wejściowy wymagany przez model.
     """
     rgb_image = cv2.cvtColor(
         obs.observation["images"][CAM_KEY[args.robot_type]], cv2.COLOR_BGR2RGB)
@@ -70,11 +70,11 @@ def run_policy(
     output_dir: Path,
 ) -> None:
     """
-    Single rollout loop:
-        1) warm start the robot,
-        2) stream observations,
-        3) fetch actions from the policy server,
-        4) execute with temporal ensembling for smoother control.
+    Pojedyncza pętla rollout:
+        1) ustawia robota w pozycji startowej,
+        2) strumieniuje obserwacje,
+        3) pobiera akcje z serwera polityki,
+        4) wykonuje je z uśrednianiem czasowym dla płynniejszego sterowania.
     """
 
     _ = env.step(INIT_POSE[args.robot_type])
@@ -82,31 +82,31 @@ def run_policy(
     t = 0
 
     while True:
-        # Gapture observation
+        # Pobierz aktualną obserwację robota i środowiska.
         obs = env.get_observation(t)
-        # Format observation
+        # Sformatuj obserwację do postaci wejściowej dla modelu.
         obs = prepare_observation(args, obs)
         cond_obs_queues = populate_queues(cond_obs_queues, obs)
-        # Call server to get actions
+        # Wyślij obserwacje na serwer i pobierz przewidywane akcje.
         pred_actions = client.predict_action(args.language_instruction,
                                              cond_obs_queues).unsqueeze(0)
-        # Keep only the next horizon of actions and apply temporal ensemble smoothing
+        # Zachowaj horyzont akcji i zastosuj wygładzanie czasowe.
         actions = temporal_ensembler.update(
             pred_actions[:, :args.action_horizon])[0]
 
-        # Execute the actions
+        # Wykonuj akcje w pętli sterowania w czasie rzeczywistym.
         for n in range(args.exe_steps):
             action = actions[n].cpu().numpy()
             print(f">>> Exec => step {n} action: {action}", flush=True)
             print("---------------------------------------------")
 
-            # Maintain real-time loop at `control_freq` Hz
+            # Zachowaj częstotliwość sterowania `control_freq` Hz.
             t1 = time.time()
             obs = env.step(action)
             time.sleep(max(0, 1 / args.control_freq - time.time() + t1))
             t += 1
 
-            # Prime the queue for the next action step (except after the last one in this chunk)
+            # Uzupełnij kolejkę obserwacji dla kolejnego kroku (oprócz ostatniego).
             if n < args.exe_steps - 1:
                 obs = prepare_observation(args, obs)
                 cond_obs_queues = populate_queues(cond_obs_queues, obs)
@@ -115,18 +115,18 @@ def run_policy(
 def run_eval(args: argparse.Namespace) -> None:
     client = LongConnectionClient(BASE_URL)
 
-    # Initialize ACT temporal moving-averge smoother
+    # Zainicjalizuj czasowe uśrednianie ACT, aby ograniczyć drgania ruchu.
     temporal_ensembler = ACTTemporalEnsembler(temporal_ensemble_coeff=0.01,
                                               chunk_size=args.action_horizon,
                                               exe_steps=args.exe_steps)
     temporal_ensembler.reset()
 
-    # Initialize observation and action horizon queue
+    # Utwórz kolejki obserwacji oraz akcji dla zadanego horyzontu czasowego.
     cond_obs_queues = {
         "observation.images.top": deque(maxlen=args.observation_horizon),
         "observation.state": deque(maxlen=args.observation_horizon),
         "action": deque(
-            maxlen=16),  # NOTE: HAND CODE AS THE MODEL PREDCIT FUTURE 16 STEPS
+            maxlen=16),  # UWAGA: model przewiduje z wyprzedzeniem 16 kroków
     }
 
     env = make_real_env(
@@ -151,44 +151,44 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument("--robot_type",
                         type=str,
                         default="g1_dex1",
-                        help="The type of the robot embodiment.")
+                        help="Typ platformy robota.")
     parser.add_argument(
         "--action_horizon",
         type=int,
         default=16,
-        help="Number of future actions, predicted by the policy, to keep",
+        help="Liczba przyszłych akcji przewidzianych przez politykę.",
     )
     parser.add_argument(
         "--exe_steps",
         type=int,
         default=16,
         help=
-        "Number of future actions to execute, which must be less than the above action horizon.",
+        "Liczba przyszłych akcji do wykonania (mniejsza niż action_horizon).",
     )
     parser.add_argument(
         "--observation_horizon",
         type=int,
         default=2,
-        help="Number of most recent frames/states to consider.",
+        help="Liczba ostatnich klatek/stadiów używana w obserwacji.",
     )
     parser.add_argument(
         "--language_instruction",
         type=str,
         default="Pack black camera into box",
-        help="The language instruction provided to the policy server.",
+        help="Instrukcja językowa przekazywana do serwera polityki.",
     )
     parser.add_argument("--num_rollouts_planned",
                         type=int,
                         default=10,
-                        help="The number of rollouts to run.")
+                        help="Liczba planowanych rolloutów.")
     parser.add_argument("--output_dir",
                         type=str,
                         default="./results",
-                        help="The directory for saving results.")
+                        help="Katalog zapisu wyników.")
     parser.add_argument("--control_freq",
                         type=float,
                         default=30,
-                        help="The Low-level control frequency in Hz.")
+                        help="Częstotliwość sterowania niskiego poziomu w Hz.")
     return parser
 
 
